@@ -8,38 +8,11 @@
 
 #include "default64mbdtc.h"
 
-// Just default RAM amount is 64MB.
-uint32_t ram_amt = 64*1024*1024;	// # 模拟的内存大小
-int fail_on_all_faults = 0;			// # Flag, 用于解读-d指令, 如果为 1 则大循环立刻报错停机;
-									// # 否则进入HandleException后原地返回(可以在hook里处理些东西)
-									// # 这之后直接继续在内部转跳到 mtvec 的逻辑
+#include "../include/hook.h"
 
-static int64_t SimpleReadNumberInt( const char * number, int64_t defaultNumber ); 	// # 辅助函数, 用于参数的数字解读
-static uint64_t GetTimeMicroseconds();												// # 获取系统时间的胶水
-static void ResetKeyboardInput();													// # UART相关
-static void CaptureKeyboardInput();													// # UART相关
-static uint32_t HandleException( uint32_t ir, uint32_t retval );					// # fail_on_all_faults = 1 时的处理函数
-static uint32_t HandleControlStore( uint32_t addy, uint32_t val );					// 用于MMIO写操作的处理
-static uint32_t HandleControlLoad( uint32_t addy );									// 用于MMIO读操作的处理
-static void HandleOtherCSRWrite( uint8_t * image, uint16_t csrno, uint32_t value );	// 用于未知CSR的写操作的处理
-static int32_t HandleOtherCSRRead( uint8_t * image, uint16_t csrno );				// 用于未知CSR的读操作的处理
-static void MiniSleep();															// # WFI时主机以来这个小睡
-static int IsKBHit();																// # UART相关
-static int ReadKBByte();															// # UART相关
-
-// This is the functionality we want to override in the emulator.
-//  think of this as the way the emulator's processor is connected to the outside world.
-#define MINIRV32WARN( x... ) printf( x );
-#define MINIRV32_DECORATE  static
-#define MINI_RV32_RAM_SIZE ram_amt
-#define MINIRV32_IMPLEMENTATION
-#define MINIRV32_POSTEXEC( pc, ir, retval ) { if( retval > 0 ) { if( fail_on_all_faults ) { printf( "FAULT\n" ); return 3; } else retval = HandleException( ir, retval ); } }
-#define MINIRV32_HANDLE_MEM_STORE_CONTROL( addy, val ) if( HandleControlStore( addy, val ) ) return val;
-#define MINIRV32_HANDLE_MEM_LOAD_CONTROL( addy, rval ) rval = HandleControlLoad( addy );
-#define MINIRV32_OTHERCSR_WRITE( csrno, value ) HandleOtherCSRWrite( image, csrno, value );
-#define MINIRV32_OTHERCSR_READ( csrno, value ) value = HandleOtherCSRRead( image, csrno );
-
-#include "mini-rv32ima.h"
+// 见Hook.h中的作用解释
+uint32_t ram_amt = 64*1024*1024;
+int fail_on_all_faults = 0;
 
 uint8_t * ram_image = 0;
 struct MiniRV32IMAState * core;			// # 主要是各种寄存器

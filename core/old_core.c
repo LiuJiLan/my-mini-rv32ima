@@ -2,7 +2,9 @@
 // Created by liujilan on 25-9-17.
 //
 
-int32_t MyMiniRV32IMAStep( struct MiniRV32IMAState * state, uint8_t * image, uint32_t vProcAddress, uint32_t elapsedUs, int count )
+#include "hook.h"
+
+int32_t MiniRV32IMAStep( struct MiniRV32IMAState * state, uint8_t * image, uint32_t vProcAddress, uint32_t elapsedUs, int count )
 {
 	uint32_t new_timer = CSR( timerl ) + elapsedUs;		// # 将外部时间片累加到自身
 	if( new_timer < CSR( timerl ) ) CSR( timerh )++;
