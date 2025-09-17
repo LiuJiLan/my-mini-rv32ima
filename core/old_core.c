@@ -2,7 +2,7 @@
 // Created by liujilan on 25-9-17.
 //
 
-#include "hook.h"
+#include "core.h"
 
 int32_t MiniRV32IMAStep( struct MiniRV32IMAState * state, uint8_t * image, uint32_t vProcAddress, uint32_t elapsedUs, int count )
 {

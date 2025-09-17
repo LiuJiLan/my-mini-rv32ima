@@ -5,6 +5,7 @@
 // Copyright 2022 Charles Lohr, you may use this file or any portions herein under any of the BSD, MIT, or CC0 licenses.
 
 #include "hook.h"
+#include "core.h"
 
 // 见Hook.h中的作用解释
 uint32_t ram_amt = 64*1024*1024;
@@ -178,7 +179,9 @@ restart:
 		if( single_step )
 			DumpState( core, ram_image);
 
-		int ret = MiniRV32IMAStep( core, ram_image, 0, elapsedUs, instrs_per_flip ); // Execute upto 1024 cycles before breaking out.
+		//int ret = MiniRV32IMAStep( core, ram_image, 0, elapsedUs, instrs_per_flip ); // Execute upto 1024 cycles before breaking out.
+		int ret = MyMiniRV32IMAStep(core, ram_image, 0, elapsedUs, instrs_per_flip);
+
 		switch( ret )
 		{
 			case 0: break;
@@ -206,21 +209,21 @@ restart:
 
 #define strtoll _strtoi64
 
- void CaptureKeyboardInput()
+void CaptureKeyboardInput()
 {
 	system(""); // Poorly documented tick: Enable VT100 Windows mode.
 }
 
- void ResetKeyboardInput()
+void ResetKeyboardInput()
 {
 }
 
- void MiniSleep()
+void MiniSleep()
 {
 	Sleep(1);
 }
 
- uint64_t GetTimeMicroseconds()
+uint64_t GetTimeMicroseconds()
 {
 	static LARGE_INTEGER lpf;
 	LARGE_INTEGER li;
@@ -233,12 +236,12 @@ restart:
 }
 
 
- int IsKBHit()
+int IsKBHit()
 {
 	return _kbhit();
 }
 
- int ReadKBByte()
+int ReadKBByte()
 {
 	// This code is kind of tricky, but used to convert windows arrow keys
 	// to VT100 arrow keys.
@@ -285,14 +288,14 @@ restart:
 #include <signal.h>
 #include <sys/time.h>
 
- void CtrlC(int sig)
+void CtrlC(int sig)
 {
 	DumpState( core, ram_image);
 	exit( 0 );
 }
 
 // Override keyboard, so we can capture all keyboard input for the VM.
- void CaptureKeyboardInput()
+void CaptureKeyboardInput()
 {
 	// Hook exit, because we want to re-enable keyboard.
 	atexit(ResetKeyboardInput);
@@ -304,7 +307,7 @@ restart:
 	tcsetattr(0, TCSANOW, &term);
 }
 
- void ResetKeyboardInput()
+void ResetKeyboardInput()
 {
 	// Re-enable echo, etc. on keyboard.
 	struct termios term;
@@ -313,12 +316,12 @@ restart:
 	tcsetattr(0, TCSANOW, &term);
 }
 
- void MiniSleep()
+void MiniSleep()
 {
 	usleep(500);
 }
 
- uint64_t GetTimeMicroseconds()
+uint64_t GetTimeMicroseconds()
 {
 	struct timeval tv;
 	gettimeofday( &tv, 0 );
@@ -327,7 +330,7 @@ restart:
 
 static int is_eofd;
 
- int ReadKBByte()
+int ReadKBByte()
 {
 	if( is_eofd ) return 0xffffffff;
 	char rxchar = 0;
@@ -339,7 +342,7 @@ static int is_eofd;
 		return -1;
 }
 
- int IsKBHit()
+int IsKBHit()
 {
 	if( is_eofd ) return -1;
 	int byteswaiting;
@@ -356,7 +359,7 @@ static int is_eofd;
 // Rest of functions functionality
 //////////////////////////////////////////////////////////////////////////
 
- uint32_t HandleException( uint32_t ir, uint32_t code )
+uint32_t HandleException( uint32_t ir, uint32_t code )
 {
 	// Weird opcode emitted by duktape on exit.
 	if( code == 3 )
@@ -366,7 +369,7 @@ static int is_eofd;
 	return code;
 }
 
- uint32_t HandleControlStore( uint32_t addy, uint32_t val )
+uint32_t HandleControlStore( uint32_t addy, uint32_t val )
 {
 	if( addy == 0x10000000 ) //UART 8250 / 16550 Data Buffer
 	{
@@ -386,7 +389,7 @@ static int is_eofd;
 }
 
 
- uint32_t HandleControlLoad( uint32_t addy )
+uint32_t HandleControlLoad( uint32_t addy )
 {
 	// Emulating a 8250 / 16550 UART
 	if( addy == 0x10000005 )
@@ -400,7 +403,7 @@ static int is_eofd;
 	return 0;
 }
 
- void HandleOtherCSRWrite( uint8_t * image, uint16_t csrno, uint32_t value )
+void HandleOtherCSRWrite( uint8_t * image, uint16_t csrno, uint32_t value )
 {
 	if( csrno == 0x136 )
 	{
@@ -431,7 +434,7 @@ static int is_eofd;
 	}
 }
 
- int32_t HandleOtherCSRRead( uint8_t * image, uint16_t csrno )
+int32_t HandleOtherCSRRead( uint8_t * image, uint16_t csrno )
 {
 	if( csrno == 0x140 )
 	{
@@ -441,7 +444,7 @@ static int is_eofd;
 	return 0;
 }
 
- int64_t SimpleReadNumberInt( const char * number, int64_t defaultNumber )
+int64_t SimpleReadNumberInt( const char * number, int64_t defaultNumber )
 {
 	if( !number || !number[0] ) return defaultNumber;
 	int radix = 10;
