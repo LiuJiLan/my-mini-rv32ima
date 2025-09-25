@@ -180,7 +180,8 @@ restart:
 			DumpState( core, ram_image);
 
 		//int ret = MiniRV32IMAStep( core, ram_image, 0, elapsedUs, instrs_per_flip ); // Execute upto 1024 cycles before breaking out.
-		int ret = MyMiniRV32IMAStep(core, ram_image, 0, elapsedUs, instrs_per_flip);
+		//int ret = MyMiniRV32IMAStep(core, ram_image, 0, elapsedUs, instrs_per_flip);
+		int ret = SingleMiniRV32IMAStep(core, ram_image, 0, elapsedUs, instrs_per_flip);
 
 		switch( ret )
 		{

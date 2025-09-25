@@ -65,6 +65,12 @@ extern "C" {
                               uint32_t elapsedUs,
                               int count);
 
+    int32_t SingleMiniRV32IMAStep(struct MiniRV32IMAState* state,
+                              uint8_t* image,
+                              uint32_t vProcAddress,
+                              uint32_t elapsedUs,
+                              int count);
+
 #ifdef __cplusplus
 }
 #endif
